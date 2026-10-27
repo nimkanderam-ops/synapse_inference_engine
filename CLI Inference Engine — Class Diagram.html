@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CLI Inference Engine — Class Diagram</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1c1c1a; --muted: #6b6b66;
+    --border: #d8d6cd; --card: #f7f6f2; --accent: #8a4a1e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161614; --fg: #e9e7df; --muted: #a3a199; --border: #3a3934; --card: #201f1c; --accent: #d99a63;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #161614; --fg: #e9e7df; --muted: #a3a199; --border: #3a3934; --card: #201f1c; --accent: #d99a63; }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 18px 60px; }
+  h1 { font-size: 1.5rem; margin: 0 0 2px; }
+  h2 { font-size: 1.08rem; margin-top: 34px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .sub { color: var(--muted); margin-top: 2px; }
+  .diagram-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; overflow-x: auto; }
+  pre.mermaid { margin: 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  code { background: var(--card); padding: 1px 5px; border-radius: 4px; font-size: 0.88em; border: 1px solid var(--border); }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 7px; }
+  .legend-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 8px; margin-top: 10px; }
+  .legend-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; font-size: 0.87rem; }
+  .fix { border-left: 3px solid var(--accent); padding-left: 10px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>CLI Model-Inference Engine — Class Diagram</h1>
+<p class="sub">Final revision · C++ OOP mini-project</p>
+
+<div class="diagram-card">
+<pre class="mermaid">
+classDiagram
+    class CLIApp {
+        -CommandParser parser
+        -ModelManager modelManager
+        -Tokenizer tokenizer
+        -InferenceEngine engine
+        -OutputGenerator outputGen
+        +run() void
+        +readInput() string
+        +dispatch(unique_ptr~Command~ cmd) void
+    }
+    class AppContext {
+        &lt;&lt;struct&gt;&gt;
+        +ModelManager&amp; modelManager
+        +Tokenizer&amp; tokenizer
+        +InferenceEngine&amp; engine
+        +OutputGenerator&amp; outputGen
+    }
+    class CommandParser {
+        -AppContext&amp; ctx
+        +parse(string input) unique_ptr~Command~
+    }
+    class Command {
+        &lt;&lt;abstract&gt;&gt;
+        +execute() void
+    }
+    class LoadModelCommand {
+        -string modelPath
+        -AppContext&amp; ctx
+        +LoadModelCommand(string path, AppContext&amp; ctx)
+        +execute() void
+    }
+    class PromptCommand {
+        -string promptText
+        -AppContext&amp; ctx
+        +PromptCommand(string prompt, AppContext&amp; ctx)
+        +execute() void
+    }
+    class ModelManager {
+        -unique_ptr~Model~ model
+        +loadModel(string path) void
+        +destroyModel() void
+        +getModel() Model&amp;
+        +hasModel() bool
+    }
+    class ModelFactory {
+        +createModel(string path) unique_ptr~Model~
+    }
+    class Model {
+        &lt;&lt;abstract&gt;&gt;
+        #vector~LayerPtr~ layers
+        +forward(const Tensor&amp; input) Tensor
+    }
+    class ToyTransformerModel {
+        +forward(const Tensor&amp; input) Tensor
+    }
+    class Layer {
+        &lt;&lt;abstract&gt;&gt;
+        +forward(const Tensor&amp; input) Tensor
+    }
+    class DenseLayer {
+        -Tensor weights
+        -Tensor bias
+        +forward(const Tensor&amp; input) Tensor
+    }
+    class Tokenizer {
+        -map~string,int~ vocab
+        +encode(string text) Tensor
+        +decode(const Tensor&amp; tokens) string
+    }
+    class InferenceEngine {
+        +run(const Model&amp; model, const Tensor&amp; input) Tensor
+    }
+    class Tensor {
+        -vector~float~ data
+        -vector~int~ shape
+        +add(const Tensor&amp; other) Tensor
+        +matmul(const Tensor&amp; other) Tensor
+    }
+    class OutputGenerator {
+        -Tokenizer* tokenizer
+        +generate(const Tensor&amp; output) string
+    }
+    Command &lt;|-- LoadModelCommand
+    Command &lt;|-- PromptCommand
+    Model &lt;|-- ToyTransformerModel
+    Layer &lt;|-- DenseLayer
+    CLIApp --&gt; CommandParser : uses
+    CLIApp --&gt; ModelManager : uses
+    CLIApp --&gt; Tokenizer : uses
+    CLIApp --&gt; InferenceEngine : uses
+    CLIApp --&gt; OutputGenerator : uses
+    CLIApp ..&gt; AppContext : creates
+    CommandParser --&gt; AppContext : uses
+    CommandParser ..&gt; Command : creates
+    LoadModelCommand --&gt; AppContext : uses
+    PromptCommand --&gt; AppContext : uses
+    AppContext --&gt; ModelManager : refers to
+    AppContext --&gt; Tokenizer : refers to
+    AppContext --&gt; InferenceEngine : refers to
+    AppContext --&gt; OutputGenerator : refers to
+    ModelManager ..&gt; ModelFactory : uses
+    ModelFactory ..&gt; Model : creates
+    ModelFactory ..&gt; ToyTransformerModel : instantiates
+    ModelManager "1" *-- "0..1" Model : owns
+    Model "1" *-- "1..*" Layer : owns
+    Layer ..&gt; Tensor : transforms
+    Tokenizer ..&gt; Tensor : produces
+    OutputGenerator --&gt; Tokenizer : uses
+    OutputGenerator ..&gt; Tensor : consumes
+    InferenceEngine ..&gt; Model : uses
+    InferenceEngine ..&gt; Tensor : produces
+</pre>
+</div>
+
+<h2>Reading the arrows</h2>
+<div class="legend-grid">
+  <div class="legend-item"><strong>▷ hollow triangle</strong> — inheritance ("is-a")</div>
+  <div class="legend-item"><strong>◆ filled diamond</strong> — composition, owned via <code>unique_ptr</code></div>
+  <div class="legend-item"><strong>→ solid arrow</strong> — association, a stored reference/pointer member</div>
+  <div class="legend-item"><strong>⇢ dashed arrow</strong> — dependency, used only as a parameter or return value</div>
+</div>
+
+<h2>What each class is responsible for</h2>
+<table>
+<tr><th>Class</th><th>Area</th><th>Task</th></tr>
+<tr><td>CLIApp</td><td>Orchestration</td><td>Runs the REPL loop, reads input, builds and dispatches commands</td></tr>
+<tr><td>AppContext</td><td>Orchestration</td><td>Read-only bundle of references so a command can reach the subsystems it needs</td></tr>
+<tr><td>CommandParser</td><td>Orchestration</td><td>Turns raw text into the right concrete <code>Command</code>, injecting <code>AppContext</code></td></tr>
+<tr><td>Command</td><td>Orchestration</td><td>Abstract; declares <code>execute()</code></td></tr>
+<tr><td>LoadModelCommand</td><td>Orchestration</td><td>Tells <code>ModelManager</code> to swap models</td></tr>
+<tr><td>PromptCommand</td><td>Orchestration</td><td>Tokenizes, runs inference, prints the result</td></tr>
+<tr><td>ModelManager</td><td>Model</td><td>Owns the model's lifetime via <code>unique_ptr</code>; delegates construction to <code>ModelFactory</code></td></tr>
+<tr><td>ModelFactory</td><td>Model</td><td>Only class that knows concrete <code>Model</code> subclasses; builds the right one from a path</td></tr>
+<tr><td>Model</td><td>Model</td><td>Abstract; owns the layer stack, defines <code>forward()</code></td></tr>
+<tr><td>ToyTransformerModel</td><td>Model</td><td>One concrete architecture</td></tr>
+<tr><td>Layer</td><td>Model</td><td>Abstract; defines one computation step</td></tr>
+<tr><td>DenseLayer</td><td>Model</td><td>One concrete layer implementation</td></tr>
+<tr><td>Tokenizer</td><td>I/O</td><td>Text ↔ token <code>Tensor</code>, both directions</td></tr>
+<tr><td>InferenceEngine</td><td>Model</td><td>Stateless — runs a <code>Tensor</code> through a given model's layers</td></tr>
+<tr><td>Tensor</td><td>Data</td><td>Numeric buffer + shape, with <code>add</code> / <code>matmul</code></td></tr>
+<tr><td>OutputGenerator</td><td>I/O</td><td>Final <code>Tensor</code> → text via <code>Tokenizer::decode</code>, then prints</td></tr>
+</table>
+
+</div>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+</body>
+</html>

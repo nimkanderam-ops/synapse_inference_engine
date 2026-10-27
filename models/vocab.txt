@@ -1,0 +1,16 @@
+<unk> 0
+<pad> 1
+hello 2
+hi 3
+hey 4
+weather 5
+rain 6
+sunny 7
+temperature 8
+cold 9
+play 10
+music 11
+song 12
+track 13
+today 14
+forecast 15
